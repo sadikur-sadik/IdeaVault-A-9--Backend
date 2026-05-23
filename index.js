@@ -50,6 +50,21 @@ async function run () {
       res.send(result)
     })
 
+   
+
+    // getting api with id
+
+    app.get('/ideas/:id',async(req,res ) =>{
+      
+      const id = req.params.id;
+
+      const query = { _id: new ObjectId(id) };
+
+      const result = await ideaDatabase.findOne();
+      
+      res.send(result)
+    })
+
     
 
   } finally {
