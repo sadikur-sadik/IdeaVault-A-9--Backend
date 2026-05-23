@@ -40,6 +40,17 @@ async function run () {
       res.send(result);
     });
 
+    // getting api of ideas
+
+    app.get('/ideas',async(req,res ) =>{
+      
+      const cursor = ideaDatabase.find();
+      
+      const result = await cursor.toArray()
+      res.send(result)
+    })
+
+    
 
   } finally {
 
