@@ -85,7 +85,13 @@ async function run() {
     })
 
 
+    app.delete('/ideas/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
 
+      const result = await ideaDatabase.deleteOne(query);
+      res.send(result);
+    })
 
 
   } finally {
