@@ -21,7 +21,7 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
-async function run () {
+async function run() {
   try {
 
     await client.connect();
@@ -35,37 +35,58 @@ async function run () {
 
     app.post('/ideas', async (req, res) => {
       const newUser = req.body;
-    
+
       const result = await ideaDatabase.insertOne(newUser);
+      res.send(result);
+    });
+
+    // posting comment
+    app.post('/comments', async (req, res) => {
+      const comment = req.body;
+      const result = await commentDatabase.insertOne(comment);
       res.send(result);
     });
 
     // getting api of ideas
 
-    app.get('/ideas',async(req,res ) =>{
-      
+    app.get('/ideas', async (req, res) => {
+
       const cursor = ideaDatabase.find();
-      
+
       const result = await cursor.toArray()
       res.send(result)
     })
 
-   
+
 
     // getting api with id
 
-    app.get('/ideas/:id',async(req,res ) =>{
-      
+    app.get('/ideas/:id', async (req, res) => {
+
       const id = req.params.id;
 
       const query = { _id: new ObjectId(id) };
 
       const result = await ideaDatabase.findOne();
-      
+
       res.send(result)
     })
 
-    
+
+
+
+    // getting api of comments
+    app.get('/comments', async (req, res) => {
+
+      const cursor = commentDatabase.find();
+
+      const result = await cursor.toArray()
+      res.send(result)
+    })
+
+
+
+
 
   } finally {
 
