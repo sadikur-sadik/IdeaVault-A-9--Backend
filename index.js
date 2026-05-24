@@ -92,6 +92,17 @@ async function run() {
       const result = await ideaDatabase.deleteOne(query);
       res.send(result);
     })
+    app.patch('/ideas/:id', async (req, res) => {
+
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const update = req.body
+      const updatedIdea = {
+        $set: update
+      }
+      const result = await ideaDatabase.updateOne(query,updatedIdea)
+      res.send(result)
+    })
 
 
   } finally {
