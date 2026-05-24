@@ -92,6 +92,17 @@ async function run() {
       const result = await ideaDatabase.deleteOne(query);
       res.send(result);
     })
+
+
+    app.delete('/comments/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+
+      const result = await commentDatabase.deleteOne(query);
+      res.send(result);
+    })
+
+
     app.patch('/ideas/:id', async (req, res) => {
 
       const id = req.params.id;
@@ -101,6 +112,22 @@ async function run() {
         $set: update
       }
       const result = await ideaDatabase.updateOne(query,updatedIdea)
+      res.send(result)
+    })
+
+    app.patch('/comments/:id', async (req, res) => {
+
+      const id = req.params.id;
+
+      const query = { _id: new ObjectId(id) };
+
+      const update = req.body;
+
+      const updatedComment = {
+        $set: update
+      }
+
+      const result = await commentDatabase.updateOne(query,updatedComment)
       res.send(result)
     })
 
