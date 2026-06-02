@@ -5,7 +5,10 @@ envConfig.config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000
 const cors = require('cors');
-
+const { createRemoteJWKSet, jwtVerify } = require('jose-cjs');
+const JWKS = createRemoteJWKSet(
+  new URL(process.env.JWKS_URI)
+)
 
 
 app.use(express.json())
@@ -21,6 +24,31 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
+
+
+const verifyJWTToken = async (req, res, next) => {
+ 
+  const JWTHeader = req?.headers?.authorization;
+  
+  if (!JWTHeader) {
+    return res.status(401).json({ message: "Unauthorized access" });
+  }
+  const token = JWTHeader.split(" ")[1];
+
+
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized access" });
+  }
+  try {
+    const { payload } = await jwtVerify(token, JWKS);
+
+    req.user = payload;
+    next();
+  }
+  catch (error) {
+    return res.status(403).json({ message: "forbidden" })
+  }
+}
 async function run() {
   try {
 
@@ -33,15 +61,14 @@ async function run() {
 
     // posting data
 
-    app.post('/ideas', async (req, res) => {
+    app.post('/ideas', verifyJWTToken, async (req, res) => {
       const newUser = req.body;
-
       const result = await ideaDatabase.insertOne(newUser);
       res.send(result);
     });
 
     // posting comment
-    app.post('/comments', async (req, res) => {
+    app.post('/comments',verifyJWTToken, async (req, res) => {
       const comment = req.body;
       const result = await commentDatabase.insertOne(comment);
       res.send(result);
@@ -50,8 +77,26 @@ async function run() {
     // getting api of ideas
 
     app.get('/ideas', async (req, res) => {
+      const { search, filter } = req.query;
+      const query = {};
 
-      const cursor = ideaDatabase.find();
+      if (search) {
+        query.title = { $regex: search, $options: 'i' };
+      }
+
+      if (filter) {
+        query.category = filter;
+      }
+
+      const cursor = ideaDatabase.find(query);
+      const result = await cursor.toArray();
+
+      res.send(result);
+    });
+    
+    app.get('/feturedideas', async (req, res) => {
+
+      const cursor = ideaDatabase.find().limit(6);
 
       const result = await cursor.toArray()
       res.send(result)
@@ -67,7 +112,7 @@ async function run() {
 
       const query = { _id: new ObjectId(id) };
 
-      const result = await ideaDatabase.findOne();
+      const result = await ideaDatabase.findOne(query);
 
       res.send(result)
     })
@@ -85,7 +130,7 @@ async function run() {
     })
 
 
-    app.delete('/ideas/:id', async (req, res) => {
+    app.delete('/ideas/:id', verifyJWTToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
 
@@ -94,7 +139,7 @@ async function run() {
     })
 
 
-    app.delete('/comments/:id', async (req, res) => {
+    app.delete('/comments/:id', verifyJWTToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
 
@@ -103,7 +148,7 @@ async function run() {
     })
 
 
-    app.patch('/ideas/:id', async (req, res) => {
+    app.patch('/ideas/:id', verifyJWTToken, async (req, res) => {
 
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
@@ -111,11 +156,11 @@ async function run() {
       const updatedIdea = {
         $set: update
       }
-      const result = await ideaDatabase.updateOne(query,updatedIdea)
+      const result = await ideaDatabase.updateOne(query, updatedIdea)
       res.send(result)
     })
 
-    app.patch('/comments/:id', async (req, res) => {
+    app.patch('/comments/:id',verifyJWTToken, async (req, res) => {
 
       const id = req.params.id;
 
@@ -127,7 +172,7 @@ async function run() {
         $set: update
       }
 
-      const result = await commentDatabase.updateOne(query,updatedComment)
+      const result = await commentDatabase.updateOne(query, updatedComment)
       res.send(result)
     })
 
