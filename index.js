@@ -106,7 +106,7 @@ async function run() {
 
     // getting api with id
 
-    app.get('/ideas/:id', async (req, res) => {
+    app.get('/ideas/:id',verifyJWTToken, async (req, res) => {
 
       const id = req.params.id;
 
@@ -121,7 +121,7 @@ async function run() {
 
 
     // getting api of comments
-    app.get('/comments', async (req, res) => {
+    app.get('/comments',verifyJWTToken,async (req, res) => {
 
       const cursor = commentDatabase.find();
 
