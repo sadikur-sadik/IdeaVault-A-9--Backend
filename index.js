@@ -7,7 +7,7 @@ const port = process.env.PORT || 5000
 const cors = require('cors');
 const { createRemoteJWKSet, jwtVerify } = require('jose-cjs');
 const JWKS = createRemoteJWKSet(
-  new URL(process.env.JWKS_URI)
+  new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
 )
 
 
@@ -52,9 +52,9 @@ const verifyJWTToken = async (req, res, next) => {
 async function run() {
   try {
 
-    await client.connect();
+    // await client.connect();
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     const db = client.db("idea-vault-database")
     const ideaDatabase = db.collection("ideas")
     const commentDatabase = db.collection("comments")
