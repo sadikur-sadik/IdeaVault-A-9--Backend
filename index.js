@@ -121,7 +121,7 @@ async function run() {
 
 
     // getting api of comments
-    app.get('/comments',verifyJWTToken,async (req, res) => {
+    app.get('/comments',async (req, res) => {
 
       const cursor = commentDatabase.find();
 
