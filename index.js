@@ -69,6 +69,7 @@ async function run() {
     app.post('/ideas', verifyJWTToken, async (req, res) => {
       const newUser = req.body;
       const result = await ideaDatabase.insertOne(newUser);
+      console.log(result);
       res.send(result);
     });
 
