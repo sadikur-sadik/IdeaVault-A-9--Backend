@@ -12,7 +12,12 @@ const JWKS = createRemoteJWKSet(
 
 
 app.use(express.json())
-app.use(cors());
+app.use(cors({
+  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 
 
 const uri = process.env.MONGO_URI
@@ -34,7 +39,7 @@ const verifyJWTToken = async (req, res, next) => {
     return res.status(401).json({ message: "Unauthorized access" });
   }
   const token = JWTHeader.split(" ")[1];
-
+  console.log(token);
 
   if (!token) {
     return res.status(401).json({ message: "Unauthorized access" });
@@ -121,7 +126,7 @@ async function run() {
 
 
     // getting api of comments
-    app.get('/comments',async (req, res) => {
+    app.get('/comments',verifyJWTToken,async (req, res) => {
 
       const cursor = commentDatabase.find();
 
