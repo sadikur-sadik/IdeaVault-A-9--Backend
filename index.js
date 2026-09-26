@@ -81,24 +81,91 @@ async function run() {
     });
 
     // getting api of ideas
-
     app.get('/ideas', async (req, res) => {
-      const { search, filter } = req.query;
-      const query = {};
+      try {
+        const { search, filter, category, limit } = req.query;
+        const query = {};
 
-      if (search) {
-        query.title = { $regex: search, $options: 'i' };
+        if (search) {
+          query.title = { $regex: search, $options: 'i' };
+        }
+
+        const catFilter = category || filter;
+        if (catFilter && catFilter !== 'All') {
+          query.category = { $regex: new RegExp(`^${catFilter}$`, 'i') };
+        }
+
+        let cursor = ideaDatabase.find(query).sort({ _id: -1 });
+
+        if (limit) {
+          cursor = cursor.limit(parseInt(limit, 10));
+        }
+
+        const result = await cursor.toArray();
+        res.send(result);
+      } catch (err) {
+        console.error("Error fetching ideas:", err);
+        res.status(500).json({ error: "Failed to fetch ideas" });
       }
-
-      if (filter) {
-        query.category = filter;
-      }
-
-      const cursor = ideaDatabase.find(query);
-      const result = await cursor.toArray();
-
-      res.send(result);
     });
+
+    // getting analytics and heatmap overview
+    app.get('/stats/overview', async (req, res) => {
+      try {
+        const totalIdeas = await ideaDatabase.countDocuments({});
+        const totalComments = await commentDatabase.countDocuments({});
+
+        const ideasWithPolls = await ideaDatabase
+          .find({ poll: { $exists: true, $ne: null } })
+          .toArray();
+
+        const totalPolls = ideasWithPolls.length;
+
+        let totalVotes = 0;
+        ideasWithPolls.forEach((idea) => {
+          if (idea.poll && Array.isArray(idea.poll.options)) {
+            idea.poll.options.forEach((opt) => {
+              if (Array.isArray(opt.votes)) {
+                totalVotes += opt.votes.length;
+              }
+            });
+          }
+        });
+
+        // Group ideas by category
+        const allIdeas = await ideaDatabase.find({}).toArray();
+        const categoryCounts = {};
+        allIdeas.forEach((idea) => {
+          const cat = idea.category && idea.category.trim() !== '' ? idea.category.trim() : 'General';
+          categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+        });
+
+        const totalCategoryIdeas = allIdeas.length || 1;
+        const categories = Object.keys(categoryCounts).map((catName) => {
+          const count = categoryCounts[catName];
+          const percentage = Math.round((count / totalCategoryIdeas) * 100);
+          return {
+            name: catName,
+            count,
+            percentage
+          };
+        });
+
+        categories.sort((a, b) => b.count - a.count);
+
+        res.send({
+          totalIdeas,
+          totalComments,
+          totalPolls,
+          totalVotes,
+          categories
+        });
+      } catch (err) {
+        console.error("Error fetching stats overview:", err);
+        res.status(500).json({ error: "Failed to fetch stats overview" });
+      }
+    });
+
     
     // getting live activity feed
     app.get('/activity-feed', async (req, res) => {
